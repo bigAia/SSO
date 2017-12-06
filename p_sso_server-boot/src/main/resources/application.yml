@@ -1,0 +1,7 @@
+server:
+  port: 8081
+  context-path: /server
+
+security:
+  basic:
+    enabled: false

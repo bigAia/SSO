@@ -1,0 +1,26 @@
+server:
+    port: 8082
+    context-path: /client
+    session:
+      cookie:
+        name: CLIENTSESSION
+security:
+  basic:
+    enabled: false
+  oauth2:
+    client:
+      clientId: c1
+      clientSecret: s1
+      accessTokenUri: http://localhost:8081/server/oauth/token
+      userAuthorizationUri: http://localhost:8081/server/oauth/authorize
+      scope: read
+      grant-type:
+    resource:
+      userInfoUri: http://localhost:8081/server/resource/user
+spring:
+  thymeleaf:
+    cache: false
+    redis:
+     host: 127.0.1
+     port: 6379
+     database: 11

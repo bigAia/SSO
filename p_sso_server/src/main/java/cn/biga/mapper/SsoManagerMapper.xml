@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="cn.biga.mapper.SsoManagerMapper" >
+  <resultMap id="BaseResultMap" type="cn.biga.entity.SsoManager" >
+    <id column="id" property="id" jdbcType="VARCHAR" />
+    <result column="accountName" property="accountname" jdbcType="VARCHAR" />
+    <result column="password" property="password" jdbcType="VARCHAR" />
+    <result column="des" property="des" jdbcType="VARCHAR" />
+    <result column="createUserId" property="createuserid" jdbcType="VARCHAR" />
+    <result column="createTime" property="createtime" jdbcType="TIMESTAMP" />
+    <result column="enabled" property="enabled" jdbcType="INTEGER" />
+    <result column="deleteFlag" property="deleteflag" jdbcType="INTEGER" />
+    <result column="userName" property="username" jdbcType="VARCHAR" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, accountName, password, des, createUserId, createTime, enabled, deleteFlag, userName
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.String" >
+    select 
+    <include refid="Base_Column_List" />
+    from sso_manager
+    where id = #{id,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.String" >
+    delete from sso_manager
+    where id = #{id,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="cn.biga.entity.SsoManager" >
+    insert into sso_manager (id, accountName, password, 
+      des, createUserId, createTime, 
+      enabled, deleteFlag, userName
+      )
+    values (#{id,jdbcType=VARCHAR}, #{accountname,jdbcType=VARCHAR}, #{password,jdbcType=VARCHAR}, 
+      #{des,jdbcType=VARCHAR}, #{createuserid,jdbcType=VARCHAR}, #{createtime,jdbcType=TIMESTAMP}, 
+      #{enabled,jdbcType=INTEGER}, #{deleteflag,jdbcType=INTEGER}, #{username,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="cn.biga.entity.SsoManager" >
+    insert into sso_manager
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        id,
+      </if>
+      <if test="accountname != null" >
+        accountName,
+      </if>
+      <if test="password != null" >
+        password,
+      </if>
+      <if test="des != null" >
+        des,
+      </if>
+      <if test="createuserid != null" >
+        createUserId,
+      </if>
+      <if test="createtime != null" >
+        createTime,
+      </if>
+      <if test="enabled != null" >
+        enabled,
+      </if>
+      <if test="deleteflag != null" >
+        deleteFlag,
+      </if>
+      <if test="username != null" >
+        userName,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="id != null" >
+        #{id,jdbcType=VARCHAR},
+      </if>
+      <if test="accountname != null" >
+        #{accountname,jdbcType=VARCHAR},
+      </if>
+      <if test="password != null" >
+        #{password,jdbcType=VARCHAR},
+      </if>
+      <if test="des != null" >
+        #{des,jdbcType=VARCHAR},
+      </if>
+      <if test="createuserid != null" >
+        #{createuserid,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        #{createtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="enabled != null" >
+        #{enabled,jdbcType=INTEGER},
+      </if>
+      <if test="deleteflag != null" >
+        #{deleteflag,jdbcType=INTEGER},
+      </if>
+      <if test="username != null" >
+        #{username,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="cn.biga.entity.SsoManager" >
+    update sso_manager
+    <set >
+      <if test="accountname != null" >
+        accountName = #{accountname,jdbcType=VARCHAR},
+      </if>
+      <if test="password != null" >
+        password = #{password,jdbcType=VARCHAR},
+      </if>
+      <if test="des != null" >
+        des = #{des,jdbcType=VARCHAR},
+      </if>
+      <if test="createuserid != null" >
+        createUserId = #{createuserid,jdbcType=VARCHAR},
+      </if>
+      <if test="createtime != null" >
+        createTime = #{createtime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="enabled != null" >
+        enabled = #{enabled,jdbcType=INTEGER},
+      </if>
+      <if test="deleteflag != null" >
+        deleteFlag = #{deleteflag,jdbcType=INTEGER},
+      </if>
+      <if test="username != null" >
+        userName = #{username,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="cn.biga.entity.SsoManager" >
+    update sso_manager
+    set accountName = #{accountname,jdbcType=VARCHAR},
+      password = #{password,jdbcType=VARCHAR},
+      des = #{des,jdbcType=VARCHAR},
+      createUserId = #{createuserid,jdbcType=VARCHAR},
+      createTime = #{createtime,jdbcType=TIMESTAMP},
+      enabled = #{enabled,jdbcType=INTEGER},
+      deleteFlag = #{deleteflag,jdbcType=INTEGER},
+      userName = #{username,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=VARCHAR}
+  </update>
+
+  <select id="selectByAccountName" resultType="cn.biga.entity.SsoManager" parameterType="java.lang.String" >
+    select
+    <include refid="Base_Column_List" />
+    from sso_manager
+    where accountName = #{accountName,jdbcType=VARCHAR}
+  </select>
+</mapper>

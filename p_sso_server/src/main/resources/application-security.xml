@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- - Sample namespace-based configuration - -->
+
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:oauth2="http://www.springframework.org/schema/security/oauth2"
+	xmlns:mvc="http://www.springframework.org/schema/mvc" xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.1.xsd
+                        http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-3.2.xsd
+                        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+                        http://www.springframework.org/schema/security/oauth2 http://www.springframework.org/schema/security/spring-security-oauth2-1.0.xsd">
+
+
+	<http pattern="/resource/**" create-session="never"
+		entry-point-ref="oauth2AuthenticationEntryPoint"
+		access-decision-manager-ref="oauth2AccessDecisionManager">
+		<anonymous enabled="false" />
+		<intercept-url pattern="/resource/userInfo" access="ROLE_USER,SCOPE_READ" />
+		<intercept-url pattern="/resource/user" access="SCOPE_READ" />
+		<custom-filter ref="resourceServer" before="PRE_AUTH_FILTER" />
+		<access-denied-handler ref="oauthAccessDeniedHandler" />
+	</http>
+
+	<!--
+		resource-id的值必须在对应的ClientDetails中resourceIds值中存在
+		资源安全服务器
+	-->
+	<oauth2:resource-server id="resourceServer"
+		resource-id="pic-resource" token-services-ref="tokenServices" />
+
+	<!--token服务器-->
+	<http pattern="/oauth/token" create-session="stateless"
+		authentication-manager-ref="clientAuthenticationManager"
+		entry-point-ref="oauth2AuthenticationEntryPoint">
+		<intercept-url pattern="/oauth/token" access="IS_AUTHENTICATED_FULLY" />
+		<anonymous enabled="false" />
+		<http-basic entry-point-ref="oauth2AuthenticationEntryPoint" />
+		<custom-filter ref="clientCredentialsTokenEndpointFilter" before="BASIC_AUTH_FILTER" />
+		<access-denied-handler ref="oauthAccessDeniedHandler" />
+	</http>
+
+	<!-- login门户-->
+	<http entry-point-ref="authenticationEntryPoint">
+		<intercept-url pattern="/secure/extreme/**" access="ROLE_SUPERVISOR" />
+		<intercept-url pattern="/secure/**" access="ROLE_USER" />
+		<intercept-url pattern="/oauth/**" access="ROLE_USER" />
+		<logout logout-url="/logout"
+				success-handler-ref="logoutSuccessHandler"/>
+		<!--替换掉系统的登陆拦截器-->
+		<custom-filter ref="usernamePasswordAuthenticationFilter" position="FORM_LOGIN_FILTER"/>
+		<anonymous />
+	</http>
+
+
+	<!--登录过滤器-->
+	<beans:bean id="usernamePasswordAuthenticationFilter" scope="prototype"
+				class="cn.biga.security.MyUsernamePasswordAuthenticationFilter">
+		<beans:property name="authenticationManager" ref="authenticationManager"/>
+		<beans:property name="filterProcessesUrl" value="/loginValidate" />
+		<beans:property name="usernameParameter" value="username"/>
+		<beans:property name="passwordParameter" value="password"/>
+		<beans:property name="authenticationSuccessHandler" ref="myAuthenticationSuccessHandler"/>
+		<beans:property name="authenticationFailureHandler" ref="myAuthenticationFailureHandler"/>
+	</beans:bean>
+
+	<beans:bean id="myAuthenticationFailureHandler" class="cn.biga.security.MyAuthenticationFailureHandler"/>
+	<beans:bean id="myAuthenticationSuccessHandler" class="cn.biga.security.MyAuthenticationSuccessHandler"/>
+	<beans:bean id="logoutSuccessHandler" class="cn.biga.security.MyLogoutSuccessHandler"/>
+
+	<!--登录入口-->
+	<beans:bean id="authenticationEntryPoint"
+		  class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+		<beans:property name="loginFormUrl" value="/login"/>
+	</beans:bean>
+
+	<!--管理员用户登陆-->
+	<beans:bean id="myManagerDetailsService" class="cn.biga.security.MyManagerDetailsServiceImpl"/>
+
+	<!-- 认证管理器 -->
+	<authentication-manager alias="authenticationManager">
+		<!--查找登录用户-->
+		<authentication-provider user-service-ref="myManagerDetailsService">
+			<password-encoder ref="md5PasswordEncoder">
+				<salt-source ref="reflectionSaltSource"/>
+			</password-encoder>
+		</authentication-provider>
+	</authentication-manager>
+
+	<!--加密加盐类-->
+	<beans:bean id="reflectionSaltSource" class="org.springframework.security.authentication.dao.ReflectionSaltSource">
+		<beans:property name="userPropertyToUse" value="${salt}"/>
+	</beans:bean>
+	<!--密码加密类-->
+	<beans:bean id="md5PasswordEncoder" class="org.springframework.security.authentication.encoding.Md5PasswordEncoder"/>
+
+	<!--clientCredentials模式-->
+	<beans:bean id="clientCredentialsTokenEndpointFilter"
+		class="org.springframework.security.oauth2.provider.client.ClientCredentialsTokenEndpointFilter">
+		<beans:property name="authenticationManager" ref="clientAuthenticationManager" />
+	</beans:bean>
+
+
+	<beans:bean id="oauth2AuthenticationEntryPoint"
+		class="org.springframework.security.oauth2.provider.error.OAuth2AuthenticationEntryPoint" />
+
+	<!-- 没有权限 -->
+	<beans:bean id="oauthAccessDeniedHandler"
+		class="org.springframework.security.oauth2.provider.error.OAuth2AccessDeniedHandler" />
+
+	<!--第三方机构的 AuthenticationManage-->
+	<authentication-manager id="clientAuthenticationManager">
+		<authentication-provider user-service-ref="oauth2ClientDetailsUserService" />
+	</authentication-manager>
+
+
+	<beans:bean id="oauth2ClientDetailsUserService" class="org.springframework.security.oauth2.provider.client.ClientDetailsUserDetailsService">
+		<beans:constructor-arg ref="clientDetailsService" />
+	</beans:bean>
+
+	<!--把token信息存放内存中-->
+	<beans:bean id="tokenStore" class="org.springframework.security.oauth2.provider.token.store.InMemoryTokenStore"/>
+
+	<!-- 将token信息存放redis中 -->
+	<beans:bean id="tokenStore_old" class="org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore">
+		<beans:constructor-arg ref="connectionFactory"/>
+	</beans:bean>
+
+	<!--redis连接信息-->
+	<beans:bean id="connectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory">
+		<beans:property name="hostName" value="${redis.host}"/>
+		<beans:property name="port" value="${redis.port}"/>
+		<beans:property name="database" value="${redis.database}"/>
+	</beans:bean>
+
+	<!--
+		token一次列操作
+	-->
+	<beans:bean id="tokenServices" class="org.springframework.security.oauth2.provider.token.DefaultTokenServices">
+		<beans:property name="tokenStore" ref="tokenStore"/>
+		<beans:property name="supportRefreshToken" value="true"/>
+		<beans:property name="tokenEnhancer" ref="jwtAccessTokenConvert" />
+		<beans:property name="clientDetailsService" ref="clientDetailsService"/>
+	</beans:bean>
+
+	<!--
+		搜搜clientId等信息
+	-->
+	<beans:bean id="clientDetailsService" class="cn.biga.security.MyClientDetailsService"/>
+	<!--jwt-->
+	<beans:bean id="jwtAccessTokenConvert"
+		class="org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter">
+	</beans:bean>
+
+	<!--核心设置-->
+	<oauth2:authorization-server
+		client-details-service-ref="clientDetailsService" token-services-ref="tokenServices"
+		user-approval-handler-ref="oauthUserApprovalHandler">
+		<!--设置authorized-grant-type的行为-->
+		<oauth2:authorization-code />
+		<oauth2:implicit disabled="false"/>
+		<oauth2:refresh-token />
+		<oauth2:client-credentials disabled="false"/>
+		<oauth2:password disabled="false"/>
+	</oauth2:authorization-server>
+
+	<!--
+		确认client是否可信任的关键点
+		自定义 跳过授权页面，默认登陆即同意授权
+	-->
+	<beans:bean id="oauthUserApprovalHandler" class="cn.biga.security.MyDefaultUserApprovalHandler" >
+		<beans:property name="approved" value="true"/>
+	</beans:bean>
+
+	<!--
+		资源地址的权限验证
+	-->
+	<beans:bean id="oauth2AccessDecisionManager"
+		class="org.springframework.security.access.vote.UnanimousBased">
+		<beans:constructor-arg>
+			<beans:list>
+				<beans:bean class="org.springframework.security.oauth2.provider.vote.ScopeVoter" />
+				<beans:bean class="org.springframework.security.access.vote.RoleVoter" />
+				<beans:bean class="org.springframework.security.access.vote.AuthenticatedVoter" />
+			</beans:list>
+		</beans:constructor-arg>
+	</beans:bean>
+</beans:beans>
